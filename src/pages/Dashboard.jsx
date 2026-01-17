@@ -146,35 +146,57 @@ const Dashboard = () => {
         if (!error) fetchMonthlyTasks(date);
     };
 
-    const isHoliday = (date) => {
-        const year = date.getFullYear();
-        const month = date.getMonth() + 1;
-        const day = date.getDate();
-        const dateString = `${month}-${day}`;
-
-        // Simple Solar Holidays (Fixed)
-        const solarHolidays = [
-            '1-1',  // New Year
-            '3-1',  // Samiljeol
-            '5-5',  // Children's Day
-            '6-6',  // Memorial Day
-            '8-15', // Liberation Day
-            '10-3', // Foundation Day
-            '10-9', // Hangeul Day
-            '12-25' // Christmas
+    const getHolidays = (year) => {
+        // Fixed holidays
+        const holidays = [
+            `${year}-01-01`, // New Year
+            `${year}-03-01`, // Samiljeol
+            `${year}-05-05`, // Children's Day
+            `${year}-06-06`, // Memorial Day
+            `${year}-08-15`, // Liberation Day
+            `${year}-10-03`, // Foundation Day
+            `${year}-10-09`, // Hangeul Day
+            `${year}-12-25`, // Christmas
         ];
 
-        // Weekend check (0 is Sunday, 6 is Saturday)
-        const dayOfWeek = date.getDay();
-        return dayOfWeek === 0 || dayOfWeek === 6 || solarHolidays.includes(dateString);
+        // Specific handling for 2025 and 2026 (Lunar New Year, Chuseok, Buddha's Birthday, Substitute Holidays)
+        if (year === 2025) {
+            holidays.push(
+                '2025-01-28', '2025-01-29', '2025-01-30', // Seollal
+                '2025-03-03', // Substitute Samiljeol
+                '2025-05-06', // Substitute Children's Day
+                '2025-05-05', // Buddha's Birthday (Matches Children's Day)
+                '2025-10-05', '2025-10-06', '2025-10-07', '2025-10-08', // Chuseok & extended
+                // Add more specific substitutes if needed
+            );
+        } else if (year === 2026) {
+            holidays.push(
+                '2026-02-16', '2026-02-17', '2026-02-18', // Seollal
+                '2026-03-02', // Substitute Samiljeol
+                '2026-05-24', // Buddha's Birthday
+                '2026-05-25', // Substitute Buddha's Birthday
+                '2026-09-24', '2026-09-25', '2026-09-26', // Chuseok
+                // Check substitutes logic as needed
+            );
+        }
+        return holidays;
+    };
+
+    const isHoliday = (date) => {
+        const year = date.getFullYear();
+        const dateString = format(date, 'yyyy-MM-dd');
+        const holidays = getHolidays(year);
+        return holidays.includes(dateString);
     };
 
     const tileClassName = ({ date, view }) => {
         if (view === 'month') {
-            // Apply holiday class for Red background
-            if (isHoliday(date)) {
-                return 'holiday-tile';
-            }
+            const dayOfWeek = date.getDay(); // 0: Sun, 6: Sat
+            const isRedDay = dayOfWeek === 0 || isHoliday(date);
+            const isBlueDay = dayOfWeek === 6 && !isHoliday(date); // Saturday and not a holiday
+
+            if (isRedDay) return 'holiday-tile'; // Red text & Red BG
+            if (isBlueDay) return 'saturday-tile'; // Blue text & Blue BG
         }
         return null;
     };

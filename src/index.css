@@ -86,6 +86,13 @@
   /* Red Text for Date */
 }
 
+.saturday-tile {
+  background-color: rgba(25, 118, 210, 0.05) !important;
+  /* Light Blue Background */
+  color: #1976D2 !important;
+  /* Blue Text for Date */
+}
+
 /* Ensure the numeric date is clearly visible at top */
 .react-calendar__tile>abbr {
   margin-bottom: 4px;
