@@ -218,7 +218,7 @@ const Dashboard = () => {
                             <div className="flex justify-center items-center h-40 text-kepco-blue">
                                 <Loader2 className="animate-spin h-8 w-8" />
                             </div>
-                        ) : tasks.length === 0 ? (
+                        ) : dailyTasks.length === 0 ? (
                             <div className="text-center py-20 text-gray-400 flex flex-col items-center">
                                 <div className="bg-gray-50 p-4 rounded-full mb-3">
                                     <Clock className="h-8 w-8 text-gray-300" />
