@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-kepco-gray-light font-sans text-kepco-navy-dark antialiased;
+    @apply bg-kepco-light font-sans text-kepco-navy antialiased;
   }
 }
 
