@@ -93,6 +93,14 @@
   /* Blue Text for Date */
 }
 
+/* Highlight today */
+.today-tile {
+  background-color: rgba(255, 215, 0, 0.15) !important;
+  /* Light gold */
+  color: #B8860B !important;
+  /* Dark goldenrod */
+}
+
 /* Ensure the numeric date is clearly visible at top */
 .react-calendar__tile>abbr {
   margin-bottom: 4px;

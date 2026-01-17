@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import { format, startOfDay, endOfDay, parseISO } from 'date-fns';
+import { format, startOfDay, endOfDay, parseISO, isToday } from 'date-fns';
 import { Plus, CheckCircle, Circle, Clock, Trash2, X, Loader2, AlertCircle, Edit } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
@@ -227,6 +227,7 @@ const Dashboard = () => {
 
     const tileClassName = ({ date, view }) => {
         if (view === 'month') {
+            if (isToday(date)) return 'today-tile'; // Highlight today
             const dayOfWeek = date.getDay(); // 0: Sun, 6: Sat
             const isRedDay = dayOfWeek === 0 || isHoliday(date);
             const isBlueDay = dayOfWeek === 6 && !isHoliday(date); // Saturday and not a holiday
