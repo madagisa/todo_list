@@ -21,14 +21,29 @@ const Dashboard = () => {
 
     useEffect(() => {
         // Check Session & Role
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            if (session) checkUserRole(session.user.id);
-        });
+        const checkSession = async () => {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
+                    setLoading(false); // Stop loading to allow render (or redirect)
+                    // Optional: Redirect to login immediately if strictly private
+                    // navigate('/login'); 
+                    return;
+                }
+                setSession(session);
+                await checkUserRole(session.user.id);
+            } catch (error) {
+                console.error("Session check failed", error);
+                setLoading(false);
+            }
+        };
+
+        checkSession();
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session);
-            if (session) checkUserRole(session.user.id);
+            if (!session) setLoading(false);
+            else checkUserRole(session.user.id);
         });
 
         return () => subscription.unsubscribe();
@@ -39,6 +54,7 @@ const Dashboard = () => {
             fetchTasks(date);
         }
     }, [date, session]);
+
 
     const checkUserRole = async (userId) => {
         const { data, error } = await supabase
@@ -133,6 +149,20 @@ const Dashboard = () => {
         // Leaving simple for MVP.
         return null;
     };
+
+    // Redirect or show login prompt if not authenticated and not loading
+    if (!loading && !session) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+                <div className="glass-card p-8 text-center">
+                    <AlertCircle className="h-12 w-12 text-kepco-blue mx-auto mb-4" />
+                    <h2 className="text-xl font-bold text-kepco-navy mb-2">로그인이 필요합니다</h2>
+                    <p className="text-gray-600 mb-6">일정을 확인하려면 로그인이 필요합니다.</p>
+                    <a href="/login" className="btn-primary inline-block">로그인 페이지로 이동</a>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col lg:flex-row gap-8 relative">
