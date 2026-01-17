@@ -7,10 +7,18 @@ import { supabase } from '../lib/supabaseClient';
 
 const Dashboard = () => {
     const [date, setDate] = useState(new Date());
-    const [tasks, setTasks] = useState([]);
+    const [monthlyTasks, setMonthlyTasks] = useState([]); // Store all tasks for the current month
     const [loading, setLoading] = useState(true);
     const [session, setSession] = useState(null);
     const [isAdmin, setIsAdmin] = useState(false);
+
+    // Derived state for the selected day's tasks
+    const dailyTasks = monthlyTasks.filter(task => {
+        const taskDate = parseISO(task.start_time);
+        return taskDate.getDate() === date.getDate() &&
+            taskDate.getMonth() === date.getMonth() &&
+            taskDate.getFullYear() === date.getFullYear();
+    });
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,9 +33,7 @@ const Dashboard = () => {
             try {
                 const { data: { session } } = await supabase.auth.getSession();
                 if (!session) {
-                    setLoading(false); // Stop loading to allow render (or redirect)
-                    // Optional: Redirect to login immediately if strictly private
-                    // navigate('/login'); 
+                    setLoading(false);
                     return;
                 }
                 setSession(session);
@@ -51,10 +57,9 @@ const Dashboard = () => {
 
     useEffect(() => {
         if (session) {
-            fetchTasks(date);
+            fetchMonthlyTasks(date);
         }
-    }, [date, session]);
-
+    }, [date, session]); // Optimization: In a real app, only refetch if month changes
 
     const checkUserRole = async (userId) => {
         const { data, error } = await supabase
@@ -70,10 +75,11 @@ const Dashboard = () => {
         }
     };
 
-    const fetchTasks = async (selectedDate) => {
+    const fetchMonthlyTasks = async (currentDate) => {
         setLoading(true);
-        const start = startOfDay(selectedDate).toISOString();
-        const end = endOfDay(selectedDate).toISOString();
+        // Optimize to fetch start/end of the MONTH, not day
+        const start = startOfDay(new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)).toISOString();
+        const end = endOfDay(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)).toISOString();
 
         const { data, error } = await supabase
             .from('schedule_items')
@@ -83,7 +89,7 @@ const Dashboard = () => {
             .order('start_time', { ascending: true });
 
         if (error) console.error('Error fetching tasks:', error);
-        else setTasks(data || []);
+        else setMonthlyTasks(data || []);
         setLoading(false);
     };
 
@@ -92,7 +98,7 @@ const Dashboard = () => {
         if (!isAdmin) return alert("관리자만 일정을 추가할 수 있습니다.");
 
         setIsSubmitting(true);
-        // Combine date and time
+
         const dateStr = format(date, 'yyyy-MM-dd');
         const dateTime = new Date(`${dateStr}T${newTaskTime}:00`);
 
@@ -102,10 +108,10 @@ const Dashboard = () => {
                 {
                     title: newTaskTitle,
                     start_time: dateTime.toISOString(),
-                    end_time: dateTime.toISOString(), // Simplified for now
+                    end_time: dateTime.toISOString(),
                     status: 'pending',
                     user_id: session.user.id,
-                    description: newTaskType // Using description field for 'type' temporarily or add a type column
+                    description: newTaskType
                 }
             ]);
 
@@ -114,13 +120,13 @@ const Dashboard = () => {
         } else {
             setIsModalOpen(false);
             setNewTaskTitle('');
-            fetchTasks(date); // Refresh
+            fetchMonthlyTasks(date); // Refresh list
         }
         setIsSubmitting(false);
     };
 
     const toggleTaskStatus = async (taskId, currentStatus) => {
-        if (!isAdmin) return; // Optional: Only admins modify? Or users can complete? Let's assume admins for now based on strict rule.
+        if (!isAdmin) return;
 
         const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
         const { error } = await supabase
@@ -128,7 +134,7 @@ const Dashboard = () => {
             .update({ status: newStatus })
             .eq('id', taskId);
 
-        if (!error) fetchTasks(date);
+        if (!error) fetchMonthlyTasks(date);
     };
 
     const deleteTask = async (taskId) => {
@@ -140,13 +146,34 @@ const Dashboard = () => {
             .delete()
             .eq('id', taskId);
 
-        if (!error) fetchTasks(date);
+        if (!error) fetchMonthlyTasks(date);
     };
 
-    const tileContent = ({ date, view }) => {
-        // Optimization: In a real app, we should fetch monthly counts to show dots efficiently
-        // For now, this is static or requires fetching all month data which is heavy.
-        // Leaving simple for MVP.
+    const tileContent = ({ date: tileDate, view }) => {
+        if (view === 'month') {
+            // Find tasks for this specific tile date
+            const dayTasks = monthlyTasks.filter(task => {
+                const taskDate = parseISO(task.start_time);
+                return taskDate.getDate() === tileDate.getDate() &&
+                    taskDate.getMonth() === tileDate.getMonth() &&
+                    taskDate.getFullYear() === tileDate.getFullYear();
+            });
+
+            if (dayTasks.length > 0) {
+                return (
+                    <div className="flex flex-col gap-0.5 mt-1 items-start w-full px-1">
+                        {dayTasks.slice(0, 2).map((task, i) => (
+                            <div key={i} className="text-[9px] leading-tight text-left w-full truncate bg-blue-50 text-kepco-blue rounded px-1 py-0.5 font-medium">
+                                {task.title}
+                            </div>
+                        ))}
+                        {dayTasks.length > 2 && (
+                            <div className="text-[8px] text-gray-400 pl-1">+ {dayTasks.length - 2} more</div>
+                        )}
+                    </div>
+                );
+            }
+        }
         return null;
     };
 
@@ -175,7 +202,10 @@ const Dashboard = () => {
                             onChange={setDate}
                             value={date}
                             tileContent={tileContent}
+                            calendarType="gregory"
+                            defaultView="month"
                             className="w-full border-none font-sans"
+                            onActiveStartDateChange={({ activeStartDate }) => fetchMonthlyTasks(activeStartDate)}
                         />
                     </div>
                 </div>
@@ -227,7 +257,7 @@ const Dashboard = () => {
                                 {isAdmin && <p className="text-sm mt-2 text-kepco-blue cursor-pointer hover:underline" onClick={() => setIsModalOpen(true)}>Create one now</p>}
                             </div>
                         ) : (
-                            tasks.map(task => (
+                            dailyTasks.map(task => (
                                 <div key={task.id} className="group bg-white border border-gray-100 p-4 rounded-xl flex items-center justify-between hover:shadow-lg transition-all duration-300">
                                     <div className="flex items-center gap-4">
                                         <button
