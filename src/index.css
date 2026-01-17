@@ -1,85 +1,109 @@
-@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    @apply bg-kepco-light text-kepco-navy font-sans antialiased;
+    @apply bg-kepco-gray-light font-sans text-kepco-navy-dark antialiased;
   }
 }
 
 @layer components {
-  .glass-card {
-    @apply bg-white bg-opacity-70 backdrop-blur-lg border border-white/20 shadow-glass rounded-2xl;
+  .btn-primary {
+    @apply bg-kepco-blue text-white font-bold py-2 px-6 rounded-lg shadow-lg hover:shadow-xl hover:bg-opacity-90 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0;
   }
 
-  .btn-primary {
-    @apply bg-kepco-blue text-white px-6 py-2 rounded-xl font-semibold shadow-lg hover:shadow-neon hover:scale-105 transition-all duration-300;
+  .glass-card {
+    @apply bg-white bg-opacity-80 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl;
   }
 
   .input-field {
-    @apply w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-kepco-blue focus:border-transparent transition-all;
+    @apply w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-kepco-blue focus:border-transparent outline-none transition-all;
   }
+}
+
+/* Custom Scrollbar for modern look */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #CBD5E1;
+  border-radius: 20px;
 }
 
 /* Calendar Customization */
 .react-calendar {
   width: 100% !important;
   background: transparent !important;
-  font-family: 'Pretendard', sans-serif !important;
   border: none !important;
+  font-family: 'Pretendard', sans-serif !important;
 }
 
 .react-calendar__navigation button {
-  color: #0A192F;
-  min-width: 44px;
-  background: none;
-  font-size: 16px;
-  font-weight: 700;
+  color: #0A192F !important;
+  font-weight: 700 !important;
+  font-size: 1.1rem !important;
 }
 
-.react-calendar__navigation button:enabled:hover,
-.react-calendar__navigation button:enabled:focus {
-  background-color: #f3f4f6;
-  border-radius: 8px;
+.react-calendar__month-view__weekdays__weekday {
+  color: #8892B0 !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  font-size: 0.9em;
+
+  abbr {
+    text-decoration: none !important;
+  }
 }
 
-.react-calendar__month-view__weekdays {
-  text-align: center;
-  text-transform: uppercase;
-  font-weight: bold;
-  font-size: 0.75em;
-  color: #8892B0;
-  margin-bottom: 10px;
-}
-
+/* Tile Layout Fixes */
 .react-calendar__tile {
-  padding: 14px 6px !important;
-  background: none;
-  text-align: center;
-  line-height: 16px;
-  font-size: 14px;
-  border-radius: 12px;
-  transition: all 0.2s;
+  padding: 0.5rem 0.25rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  /* Align to top */
+  align-items: flex-start !important;
+  height: 90px !important;
+  /* Fixed height for consistency */
+  border-radius: 0.5rem !important;
+  font-size: 1rem !important;
+  color: #0A192F !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* Ensure the numeric date is clearly visible at top */
+.react-calendar__tile>abbr {
+  margin-bottom: 4px;
+  font-weight: 600;
+  margin-left: 2px;
 }
 
 .react-calendar__tile:enabled:hover,
 .react-calendar__tile:enabled:focus {
-  background-color: #F8FAFC;
-  color: #0054FF;
+  background-color: #E6EBF5 !important;
 }
 
 .react-calendar__tile--now {
   background: #E6EBF5 !important;
   color: #0054FF !important;
-  font-weight: bold;
+  font-weight: 800 !important;
 }
 
 .react-calendar__tile--active {
   background: #0054FF !important;
   color: white !important;
-  box-shadow: 0 4px 14px rgba(0, 84, 255, 0.4);
+}
+
+/* Active tile text override for visibility */
+.react-calendar__tile--active>div>div {
+  color: #e0f2fe !important;
+  /* Light blue text for tasks in active tile */
+  background-color: rgba(255, 255, 255, 0.2) !important;
 }

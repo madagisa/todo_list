@@ -59,7 +59,7 @@ const Dashboard = () => {
         if (session) {
             fetchMonthlyTasks(date);
         }
-    }, [date, session]); // Optimization: In a real app, only refetch if month changes
+    }, [date, session]); // Note: This fetches on every date change. Optimization: Only fetch if month changes.
 
     const checkUserRole = async (userId) => {
         const { data, error } = await supabase
@@ -98,7 +98,6 @@ const Dashboard = () => {
         if (!isAdmin) return alert("관리자만 일정을 추가할 수 있습니다.");
 
         setIsSubmitting(true);
-
         const dateStr = format(date, 'yyyy-MM-dd');
         const dateTime = new Date(`${dateStr}T${newTaskTime}:00`);
 
@@ -127,7 +126,6 @@ const Dashboard = () => {
 
     const toggleTaskStatus = async (taskId, currentStatus) => {
         if (!isAdmin) return;
-
         const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
         const { error } = await supabase
             .from('schedule_items')
@@ -140,7 +138,6 @@ const Dashboard = () => {
     const deleteTask = async (taskId) => {
         if (!isAdmin) return;
         if (!confirm('정말 삭제하시겠습니까?')) return;
-
         const { error } = await supabase
             .from('schedule_items')
             .delete()
@@ -196,7 +193,7 @@ const Dashboard = () => {
             {/* Left Column: Calendar */}
             <div className="w-full lg:w-1/3">
                 <div className="glass-card p-6">
-                    <h2 className="text-xl font-heading font-bold mb-4 text-kepco-navy">Calendar</h2>
+                    <h2 className="text-xl font-heading font-bold mb-4 text-kepco-navy">일정 달력</h2>
                     <div className="calendar-wrapper">
                         <Calendar
                             onChange={setDate}
@@ -213,11 +210,11 @@ const Dashboard = () => {
                 {/* User Info / Role Badge */}
                 <div className="mt-4 p-4 glass-card flex items-center justify-between">
                     <div>
-                        <p className="text-xs text-kepco-gray uppercase font-bold">Logged in as</p>
+                        <p className="text-xs text-kepco-gray uppercase font-bold">로그인 계정</p>
                         <p className="text-sm font-semibold truncate max-w-[150px]">{session?.user?.email}</p>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${isAdmin ? 'bg-kepco-navy text-white' : 'bg-gray-200 text-gray-600'}`}>
-                        {isAdmin ? 'Admin' : 'Viewer'}
+                        {isAdmin ? '관리자 (Admin)' : '조회자 (Viewer)'}
                     </span>
                 </div>
             </div>
@@ -228,9 +225,9 @@ const Dashboard = () => {
                     <div className="flex justify-between items-center mb-6">
                         <div>
                             <h2 className="text-2xl font-heading font-bold text-kepco-navy">
-                                {format(date, 'MMMM d, yyyy')}
+                                {format(date, 'yyyy년 M월 d일')}
                             </h2>
-                            <p className="text-kepco-gray text-sm">Today's Schedule</p>
+                            <p className="text-kepco-gray text-sm">오늘의 일정</p>
                         </div>
                         {isAdmin && (
                             <button
@@ -238,7 +235,7 @@ const Dashboard = () => {
                                 className="btn-primary flex items-center gap-2"
                             >
                                 <Plus size={18} />
-                                <span>Add Task</span>
+                                <span>일정 추가</span>
                             </button>
                         )}
                     </div>
@@ -253,8 +250,8 @@ const Dashboard = () => {
                                 <div className="bg-gray-50 p-4 rounded-full mb-3">
                                     <Clock className="h-8 w-8 text-gray-300" />
                                 </div>
-                                <p>No schedules for this day.</p>
-                                {isAdmin && <p className="text-sm mt-2 text-kepco-blue cursor-pointer hover:underline" onClick={() => setIsModalOpen(true)}>Create one now</p>}
+                                <p>등록된 일정이 없습니다.</p>
+                                {isAdmin && <p className="text-sm mt-2 text-kepco-blue cursor-pointer hover:underline" onClick={() => setIsModalOpen(true)}>일정 등록하기</p>}
                             </div>
                         ) : (
                             dailyTasks.map(task => (
@@ -287,7 +284,7 @@ const Dashboard = () => {
                                         <button
                                             onClick={() => deleteTask(task.id)}
                                             className="opacity-0 group-hover:opacity-100 p-2 text-gray-300 hover:text-red-500 transition-all"
-                                            title="Delete Task"
+                                            title="삭제"
                                         >
                                             <Trash2 size={16} />
                                         </button>
@@ -304,7 +301,7 @@ const Dashboard = () => {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-heading font-bold text-kepco-navy">Add New Schedule</h3>
+                            <h3 className="text-xl font-heading font-bold text-kepco-navy">새 일정 추가</h3>
                             <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
                                 <X size={24} />
                             </button>
@@ -312,13 +309,13 @@ const Dashboard = () => {
 
                         <form onSubmit={handleAddTask} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">제목</label>
                                 <input
                                     type="text"
                                     value={newTaskTitle}
                                     onChange={(e) => setNewTaskTitle(e.target.value)}
                                     className="input-field"
-                                    placeholder="e.g. 본부장 주간 회의"
+                                    placeholder="예: 본부장 주간 회의"
                                     required
                                     autoFocus
                                 />
@@ -326,7 +323,7 @@ const Dashboard = () => {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">시간</label>
                                     <input
                                         type="time"
                                         value={newTaskTime}
@@ -336,16 +333,16 @@ const Dashboard = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">유형</label>
                                     <select
                                         value={newTaskType}
                                         onChange={(e) => setNewTaskType(e.target.value)}
                                         className="input-field"
                                     >
-                                        <option value="work">업무 (Work)</option>
-                                        <option value="visit">순시 (Visit)</option>
-                                        <option value="meeting">회의 (Meeting)</option>
-                                        <option value="event">행사 (Event)</option>
+                                        <option value="work">업무</option>
+                                        <option value="visit">순시</option>
+                                        <option value="meeting">회의</option>
+                                        <option value="event">행사</option>
                                     </select>
                                 </div>
                             </div>
@@ -356,7 +353,7 @@ const Dashboard = () => {
                                     disabled={isSubmitting}
                                     className="w-full btn-primary flex justify-center items-center py-3 text-lg"
                                 >
-                                    {isSubmitting ? <Loader2 className="animate-spin" /> : 'Create Schedule'}
+                                    {isSubmitting ? <Loader2 className="animate-spin" /> : '일정 저장'}
                                 </button>
                             </div>
                         </form>
