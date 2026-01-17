@@ -178,6 +178,15 @@ const Dashboard = () => {
                 '2026-09-24', '2026-09-25', '2026-09-26', // Chuseok
                 // Check substitutes logic as needed
             );
+        } else if (year === 2027) {
+            holidays.push(
+                '2027-02-06', '2027-02-07', '2027-02-08', // Seollal
+                '2027-02-09', // Substitute Seollal
+                '2027-05-13', // Buddha's Birthday
+                '2027-08-16', // Substitute Liberation Day (Sun -> Mon)
+                '2027-09-14', '2027-09-15', '2027-09-16', // Chuseok
+                '2027-10-04', // Substitute Foundation Day (Sun -> Mon)
+            );
         }
         return holidays;
     };
