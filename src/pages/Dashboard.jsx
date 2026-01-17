@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { format, startOfDay, endOfDay, parseISO } from 'date-fns';
-import { Plus, CheckCircle, Circle, Clock, Trash2, X, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, CheckCircle, Circle, Clock, Trash2, X, Loader2, AlertCircle, Edit } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 const Dashboard = () => {
@@ -22,6 +22,8 @@ const Dashboard = () => {
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editTask, setEditTask] = useState(null);
     const [newTaskTitle, setNewTaskTitle] = useState('');
     const [newTaskTime, setNewTaskTime] = useState('09:00');
     const [newTaskType, setNewTaskType] = useState('work'); // 'work' | 'visit' | 'other'
@@ -144,6 +146,31 @@ const Dashboard = () => {
             .eq('id', taskId);
 
         if (!error) fetchMonthlyTasks(date);
+    };
+
+    const handleEditTask = async (e) => {
+        e.preventDefault();
+        if (!isAdmin || !editTask) return;
+        setIsSubmitting(true);
+        const dateStr = format(editTask.date, 'yyyy-MM-dd');
+        const dateTime = new Date(`${dateStr}T${newTaskTime}:00`);
+        const { error } = await supabase
+            .from('schedule_items')
+            .update({
+                title: newTaskTitle,
+                start_time: dateTime.toISOString(),
+                end_time: dateTime.toISOString(),
+                description: newTaskType,
+            })
+            .eq('id', editTask.id);
+        if (error) {
+            alert('일정 수정 실패: ' + error.message);
+        } else {
+            setIsEditModalOpen(false);
+            setEditTask(null);
+            fetchMonthlyTasks(date);
+        }
+        setIsSubmitting(false);
     };
 
     const getHolidays = (year) => {
@@ -346,13 +373,28 @@ const Dashboard = () => {
                                     </div>
 
                                     {isAdmin && (
-                                        <button
-                                            onClick={() => deleteTask(task.id)}
-                                            className="opacity-0 group-hover:opacity-100 p-2 text-gray-300 hover:text-red-500 transition-all"
-                                            title="삭제"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
+                                        <div className="flex gap-1">
+                                            <button
+                                                onClick={() => {
+                                                    setEditTask({ ...task, date: parseISO(task.start_time) });
+                                                    setNewTaskTitle(task.title);
+                                                    setNewTaskTime(format(parseISO(task.start_time), 'HH:mm'));
+                                                    setNewTaskType(task.description || 'work');
+                                                    setIsEditModalOpen(true);
+                                                }}
+                                                className="p-1 text-gray-400 hover:text-kepco-blue"
+                                                title="수정"
+                                            >
+                                                <Edit size={14} />
+                                            </button>
+                                            <button
+                                                onClick={() => deleteTask(task.id)}
+                                                className="p-1 text-gray-400 hover:text-red-500"
+                                                title="삭제"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             ))
@@ -419,6 +461,68 @@ const Dashboard = () => {
                                     className="w-full btn-primary flex justify-center items-center py-3 text-lg"
                                 >
                                     {isSubmitting ? <Loader2 className="animate-spin" /> : '일정 저장'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+            {/* Edit Task Modal */}
+            {isEditModalOpen && editTask && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-heading font-bold text-kepco-navy">일정 수정</h3>
+                            <button onClick={() => { setIsEditModalOpen(false); setEditTask(null); }} className="text-gray-400 hover:text-gray-600">
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleEditTask} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">제목</label>
+                                <input
+                                    type="text"
+                                    value={newTaskTitle}
+                                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                                    className="input-field"
+                                    required
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">시간</label>
+                                    <input
+                                        type="time"
+                                        value={newTaskTime}
+                                        onChange={(e) => setNewTaskTime(e.target.value)}
+                                        className="input-field"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">유형</label>
+                                    <select
+                                        value={newTaskType}
+                                        onChange={(e) => setNewTaskType(e.target.value)}
+                                        className="input-field"
+                                    >
+                                        <option value="work">업무</option>
+                                        <option value="visit">순시</option>
+                                        <option value="meeting">회의</option>
+                                        <option value="event">행사</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="pt-2">
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="w-full btn-primary flex justify-center items-center py-3 text-lg"
+                                >
+                                    {isSubmitting ? <Loader2 className="animate-spin" /> : '수정 저장'}
                                 </button>
                             </div>
                         </form>
