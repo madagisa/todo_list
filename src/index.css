@@ -1,0 +1,85 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-kepco-light text-kepco-navy font-sans antialiased;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white bg-opacity-70 backdrop-blur-lg border border-white/20 shadow-glass rounded-2xl;
+  }
+
+  .btn-primary {
+    @apply bg-kepco-blue text-white px-6 py-2 rounded-xl font-semibold shadow-lg hover:shadow-neon hover:scale-105 transition-all duration-300;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-kepco-blue focus:border-transparent transition-all;
+  }
+}
+
+/* Calendar Customization */
+.react-calendar {
+  width: 100% !important;
+  background: transparent !important;
+  font-family: 'Pretendard', sans-serif !important;
+  border: none !important;
+}
+
+.react-calendar__navigation button {
+  color: #0A192F;
+  min-width: 44px;
+  background: none;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.react-calendar__navigation button:enabled:hover,
+.react-calendar__navigation button:enabled:focus {
+  background-color: #f3f4f6;
+  border-radius: 8px;
+}
+
+.react-calendar__month-view__weekdays {
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: bold;
+  font-size: 0.75em;
+  color: #8892B0;
+  margin-bottom: 10px;
+}
+
+.react-calendar__tile {
+  padding: 14px 6px !important;
+  background: none;
+  text-align: center;
+  line-height: 16px;
+  font-size: 14px;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.react-calendar__tile:enabled:hover,
+.react-calendar__tile:enabled:focus {
+  background-color: #F8FAFC;
+  color: #0054FF;
+}
+
+.react-calendar__tile--now {
+  background: #E6EBF5 !important;
+  color: #0054FF !important;
+  font-weight: bold;
+}
+
+.react-calendar__tile--active {
+  background: #0054FF !important;
+  color: white !important;
+  box-shadow: 0 4px 14px rgba(0, 84, 255, 0.4);
+}
