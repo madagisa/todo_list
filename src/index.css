@@ -78,19 +78,12 @@
   overflow: hidden !important;
 }
 
-/* Weekend Styling */
-/* Saturday (7th column in Gregory) */
-.react-calendar__month-view__days__day:nth-child(7n) {
-  color: #1976D2 !important;
-  /* Blue */
-  background-color: rgba(25, 118, 210, 0.05) !important;
-}
-
-/* Sunday (1st column in Gregory) */
-.react-calendar__month-view__days__day:nth-child(7n+1) {
-  color: #D32F2F !important;
-  /* Red */
+/* Weekend/Holiday Styling using tileClassName */
+.holiday-tile {
   background-color: rgba(211, 47, 47, 0.05) !important;
+  /* Light Red Background */
+  color: #D32F2F !important;
+  /* Red Text for Date */
 }
 
 /* Ensure the numeric date is clearly visible at top */

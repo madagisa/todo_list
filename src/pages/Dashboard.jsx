@@ -146,6 +146,39 @@ const Dashboard = () => {
         if (!error) fetchMonthlyTasks(date);
     };
 
+    const isHoliday = (date) => {
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+        const dateString = `${month}-${day}`;
+
+        // Simple Solar Holidays (Fixed)
+        const solarHolidays = [
+            '1-1',  // New Year
+            '3-1',  // Samiljeol
+            '5-5',  // Children's Day
+            '6-6',  // Memorial Day
+            '8-15', // Liberation Day
+            '10-3', // Foundation Day
+            '10-9', // Hangeul Day
+            '12-25' // Christmas
+        ];
+
+        // Weekend check (0 is Sunday, 6 is Saturday)
+        const dayOfWeek = date.getDay();
+        return dayOfWeek === 0 || dayOfWeek === 6 || solarHolidays.includes(dateString);
+    };
+
+    const tileClassName = ({ date, view }) => {
+        if (view === 'month') {
+            // Apply holiday class for Red background
+            if (isHoliday(date)) {
+                return 'holiday-tile';
+            }
+        }
+        return null;
+    };
+
     const tileContent = ({ date: tileDate, view }) => {
         if (view === 'month') {
             // Find tasks for this specific tile date
@@ -199,6 +232,7 @@ const Dashboard = () => {
                             onChange={setDate}
                             value={date}
                             tileContent={tileContent}
+                            tileClassName={tileClassName}
                             calendarType="gregory"
                             defaultView="month"
                             className="w-full border-none font-sans"
