@@ -95,10 +95,32 @@
 
 /* Highlight today */
 .today-tile {
-  background-color: rgba(255, 215, 0, 0.15) !important;
-  /* Light gold */
-  color: #B8860B !important;
-  /* Dark goldenrod */
+  background-color: #1e40af !important;
+  /* 진한 파란색 */
+  color: #ffffff !important;
+  /* 텍스트 흰색 */
+}
+
+.selected-tile {
+  background-color: #bfdbfe !important;
+  /* 연한 파란색 */
+  border: 2px solid #1e40af !important;
+  /* 진한 파란색 테두리 */
+  border-radius: 0.5rem !important;
+}
+
+.tile-task {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: #1e3a8a;
+  background-color: rgba(224, 242, 254, 0.6);
+  padding: 2px 4px;
+  border-radius: 0.25rem;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 /* Ensure the numeric date is clearly visible at top */

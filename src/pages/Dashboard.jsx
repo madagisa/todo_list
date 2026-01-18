@@ -225,12 +225,15 @@ const Dashboard = () => {
         return holidays.includes(dateString);
     };
 
-    const tileClassName = ({ date, view }) => {
+    const tileClassName = ({ date: tileDate, view }) => {
         if (view === 'month') {
-            if (isToday(date)) return 'today-tile'; // Highlight today
-            const dayOfWeek = date.getDay(); // 0: Sun, 6: Sat
-            const isRedDay = dayOfWeek === 0 || isHoliday(date);
-            const isBlueDay = dayOfWeek === 6 && !isHoliday(date); // Saturday and not a holiday
+            // 오늘 날짜 강조
+            if (isToday(tileDate)) return 'today-tile';
+            // 선택된 날짜 강조 (현재 선택된 date 상태와 비교)
+            if (date && tileDate.getTime() === date.getTime()) return 'selected-tile';
+            const dayOfWeek = tileDate.getDay(); // 0: Sun, 6: Sat
+            const isRedDay = dayOfWeek === 0 || isHoliday(tileDate);
+            const isBlueDay = dayOfWeek === 6 && !isHoliday(tileDate);
 
             if (isRedDay) return 'holiday-tile'; // Red text & Red BG
             if (isBlueDay) return 'saturday-tile'; // Blue text & Blue BG
@@ -252,8 +255,8 @@ const Dashboard = () => {
                 return (
                     <div className="flex flex-col gap-0.5 mt-1 items-start w-full px-1">
                         {dayTasks.slice(0, 2).map((task, i) => (
-                            <div key={i} className="text-[9px] leading-tight text-left w-full truncate bg-blue-50 text-kepco-blue rounded px-1 py-0.5 font-medium">
-                                {task.title}
+                            <div key={i} className="tile-task text-[9px] leading-tight text-left w-full truncate">
+                                {task.title.length > 5 ? `${task.title.slice(0, 5)}…` : task.title}
                             </div>
                         ))}
                         {dayTasks.length > 2 && (
