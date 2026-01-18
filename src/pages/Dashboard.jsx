@@ -254,14 +254,11 @@ const Dashboard = () => {
             if (dayTasks.length > 0) {
                 return (
                     <div className="flex flex-col gap-0.5 mt-1 items-start w-full">
-                        {dayTasks.slice(0, 2).map((task, i) => (
+                        {dayTasks.map((task, i) => (
                             <div key={i} className="tile-task text-[9px] leading-tight text-left w-full">
-                                {task.title.length > 5 ? `${task.title.slice(0, 5)}…` : task.title}
+                                {task.title.slice(0, 5)}
                             </div>
                         ))}
-                        {dayTasks.length > 2 && (
-                            <div className="text-[8px] text-gray-400 pl-1">+ {dayTasks.length - 2} more</div>
-                        )}
                     </div>
                 );
             }
