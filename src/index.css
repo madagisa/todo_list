@@ -150,6 +150,13 @@
   color: #1e3a8a !important;
 }
 
+/* Force dark text for tasks in selected tile (overrides --active white text) */
+.selected-tile .tile-task,
+.react-calendar__tile--active .tile-task {
+  color: #1e3a8a !important;
+  background-color: rgba(255, 255, 255, 0.5) !important;
+}
+
 /* Active tile text override for visibility */
 .react-calendar__tile--active>div>div {
   color: #e0f2fe !important;
