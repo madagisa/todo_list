@@ -152,11 +152,12 @@
 
 /* Today AND Selected - Special case for contrast */
 .today-tile.selected-tile {
-  background-color: #1e40af !important;
-  /* Keep Dark Blue Background */
-  border: 2px solid #ffffff !important;
-  /* White Border for visibility */
-  color: #ffffff !important;
+  background-color: #bfdbfe !important;
+  /* Light Blue Background (Same as selected) */
+  border: 2px solid #1e40af !important;
+  /* Dark Blue Border (Same as selected) */
+  color: #1e3a8a !important;
+  /* Dark Blue Text */
 }
 
 /* Force dark text for tasks in selected tile (overrides --active white text) */
