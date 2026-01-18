@@ -150,6 +150,15 @@
   color: #1e3a8a !important;
 }
 
+/* Today AND Selected - Special case for contrast */
+.today-tile.selected-tile {
+  background-color: #1e40af !important;
+  /* Keep Dark Blue Background */
+  border: 2px solid #ffffff !important;
+  /* White Border for visibility */
+  color: #ffffff !important;
+}
+
 /* Force dark text for tasks in selected tile (overrides --active white text) */
 .selected-tile .tile-task,
 .react-calendar__tile--active .tile-task {

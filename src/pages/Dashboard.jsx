@@ -227,16 +227,21 @@ const Dashboard = () => {
 
     const tileClassName = ({ date: tileDate, view }) => {
         if (view === 'month') {
+            const classes = [];
             // 오늘 날짜 강조
-            if (isToday(tileDate)) return 'today-tile';
-            // 선택된 날짜 강조 (현재 선택된 date 상태와 비교)
-            if (date && tileDate.getTime() === date.getTime()) return 'selected-tile';
+            if (isToday(tileDate)) classes.push('today-tile');
+
+            // 선택된 날짜 강조
+            if (date && tileDate.getTime() === date.getTime()) classes.push('selected-tile');
+
             const dayOfWeek = tileDate.getDay(); // 0: Sun, 6: Sat
             const isRedDay = dayOfWeek === 0 || isHoliday(tileDate);
             const isBlueDay = dayOfWeek === 6 && !isHoliday(tileDate);
 
-            if (isRedDay) return 'holiday-tile'; // Red text & Red BG
-            if (isBlueDay) return 'saturday-tile'; // Blue text & Blue BG
+            if (isRedDay) classes.push('holiday-tile');
+            else if (isBlueDay) classes.push('saturday-tile');
+
+            return classes.join(' ');
         }
         return null;
     };
