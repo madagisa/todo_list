@@ -63,7 +63,7 @@
 
 /* Tile Layout Fixes */
 .react-calendar__tile {
-  padding: 0.5rem 0.25rem !important;
+  padding: 0.5rem 1px !important;
   display: flex !important;
   flex-direction: column !important;
   justify-content: flex-start !important;
@@ -97,11 +97,11 @@
 /* Selected date styling moved to bottom */
 
 .tile-task {
-  font-size: 0.75rem;
-  line-height: 1rem;
+  font-size: 0.65rem;
+  line-height: 0.9rem;
   color: #1e3a8a;
   background-color: rgba(224, 242, 254, 0.6);
-  padding: 2px 4px;
+  padding: 1px 2px;
   border-radius: 0.25rem;
   margin-top: 2px;
   overflow: hidden;
