@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { Menu, Zap } from 'lucide-react';
+import { Menu } from 'lucide-react';
 
 const Layout = () => {
     return (
@@ -11,9 +11,7 @@ const Layout = () => {
                     <div className="flex justify-between items-center h-16">
                         {/* Logo Area */}
                         <div className="flex items-center gap-2">
-                            <div className="bg-kepco-navy p-1.5 rounded-lg">
-                                <Zap className="h-6 w-6 text-kepco-blue" fill="currentColor" />
-                            </div>
+                            <img src="/app-icon.png" alt="KEPCO" className="h-10 w-10 rounded-lg" />
                             <div className="flex flex-col">
                                 <span className="font-heading font-bold text-lg leading-tight tracking-tight text-kepco-navy">KEPCO</span>
                                 <span className="text-[10px] font-semibold tracking-wider text-kepco-gray leading-none">대구본부장 일정관리 시스템</span>

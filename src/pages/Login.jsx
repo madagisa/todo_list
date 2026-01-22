@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
-import { Zap, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 const Login = () => {
     const [positionTitle, setPositionTitle] = useState('');
@@ -78,8 +78,8 @@ const Login = () => {
         <div className="flex flex-col items-center justify-center min-h-[80vh]">
             <div className="w-full max-w-md p-8 glass-card">
                 <div className="flex flex-col items-center mb-8">
-                    <div className="bg-kepco-navy p-3 rounded-2xl mb-4 shadow-lg">
-                        <Zap className="h-8 w-8 text-kepco-blue" fill="currentColor" />
+                    <div className="mb-4 shadow-lg rounded-2xl overflow-hidden">
+                        <img src="/app-icon.png" alt="KEPCO" className="h-16 w-16" />
                     </div>
                     <h1 className="text-2xl font-heading font-bold text-kepco-navy mb-1">
                         {mode === 'login' ? '로그인' : '가입하기'}
@@ -96,7 +96,7 @@ const Login = () => {
                             type="text"
                             required
                             className="input-field"
-                            placeholder="예: 대구본부장, 비서실장"
+                            placeholder="예: 경영지원부장, 총무팀장"
                             value={positionTitle}
                             onChange={(e) => setPositionTitle(e.target.value)}
                         />
