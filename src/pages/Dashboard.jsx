@@ -2,15 +2,18 @@ import React, { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { format, startOfDay, endOfDay, parseISO, isToday } from 'date-fns';
-import { Plus, CheckCircle, Circle, Clock, Trash2, X, Loader2, AlertCircle, Edit } from 'lucide-react';
+import { Plus, CheckCircle, Circle, Clock, Trash2, X, Loader2, AlertCircle, Edit, UserCheck, UserX, LogOut } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
     const [date, setDate] = useState(new Date());
-    const [monthlyTasks, setMonthlyTasks] = useState([]); // Store all tasks for the current month
+    const [monthlyTasks, setMonthlyTasks] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [session, setSession] = useState(null);
+    const [currentUser, setCurrentUser] = useState(null);
     const [isAdmin, setIsAdmin] = useState(false);
+    const [pendingUsers, setPendingUsers] = useState([]);
+    const navigate = useNavigate();
 
     // Derived state for the selected day's tasks
     const dailyTasks = monthlyTasks.filter(task => {
@@ -26,60 +29,79 @@ const Dashboard = () => {
     const [editTask, setEditTask] = useState(null);
     const [newTaskTitle, setNewTaskTitle] = useState('');
     const [newTaskTime, setNewTaskTime] = useState('09:00');
-    const [newTaskType, setNewTaskType] = useState('work'); // 'work' | 'visit' | 'other'
+    const [newTaskType, setNewTaskType] = useState('work');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
-        // Check Session & Role
-        const checkSession = async () => {
-            try {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session) {
-                    setLoading(false);
-                    return;
-                }
-                setSession(session);
-                await checkUserRole(session.user.id);
-            } catch (error) {
-                console.error("Session check failed", error);
-                setLoading(false);
-            }
-        };
-
-        checkSession();
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-            if (!session) setLoading(false);
-            else checkUserRole(session.user.id);
-        });
-
-        return () => subscription.unsubscribe();
-    }, []);
+        const user = localStorage.getItem('currentUser');
+        if (!user) {
+            navigate('/login');
+            return;
+        }
+        const parsedUser = JSON.parse(user);
+        setCurrentUser(parsedUser);
+        setIsAdmin(parsedUser.role === 'admin');
+        setLoading(false);
+    }, [navigate]);
 
     useEffect(() => {
-        if (session) {
+        if (currentUser) {
             fetchMonthlyTasks(date);
+            if (isAdmin) {
+                fetchPendingUsers();
+            }
         }
-    }, [date, session]); // Note: This fetches on every date change. Optimization: Only fetch if month changes.
+    }, [date, currentUser, isAdmin]);
 
-    const checkUserRole = async (userId) => {
+    const fetchPendingUsers = async () => {
         const { data, error } = await supabase
             .from('profiles')
-            .select('role')
-            .eq('id', userId)
-            .single();
+            .select('*')
+            .eq('is_approved', false)
+            .order('created_at', { ascending: true });
 
-        if (data && data.role === 'admin') {
-            setIsAdmin(true);
-        } else {
-            setIsAdmin(false);
+        if (!error) setPendingUsers(data || []);
+    };
+
+    const handleApproveUser = async (userId) => {
+        const { error } = await supabase
+            .from('profiles')
+            .update({ is_approved: true })
+            .eq('id', userId);
+
+        if (!error) fetchPendingUsers();
+    };
+
+    const handleRejectUser = async (userId) => {
+        if (!confirm('정말 이 가입 신청을 거절하시겠습니까? 해당 계정이 삭제됩니다.')) return;
+        const { error } = await supabase
+            .from('profiles')
+            .delete()
+            .eq('id', userId);
+
+        if (!error) fetchPendingUsers();
+    };
+
+    const handleWithdraw = async () => {
+        if (!confirm('정말 탈퇴하시겠습니까? 모든 데이터가 삭제됩니다.')) return;
+        const { error } = await supabase
+            .from('profiles')
+            .delete()
+            .eq('id', currentUser.id);
+
+        if (!error) {
+            localStorage.removeItem('currentUser');
+            navigate('/login');
         }
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('currentUser');
+        navigate('/login');
     };
 
     const fetchMonthlyTasks = async (currentDate) => {
         setLoading(true);
-        // Optimize to fetch start/end of the MONTH, not day
         const start = startOfDay(new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)).toISOString();
         const end = endOfDay(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)).toISOString();
 
@@ -111,7 +133,7 @@ const Dashboard = () => {
                     start_time: dateTime.toISOString(),
                     end_time: dateTime.toISOString(),
                     status: 'pending',
-                    user_id: session.user.id,
+                    user_id: currentUser.id,
                     description: newTaskType
                 }
             ]);
@@ -121,7 +143,7 @@ const Dashboard = () => {
         } else {
             setIsModalOpen(false);
             setNewTaskTitle('');
-            fetchMonthlyTasks(date); // Refresh list
+            fetchMonthlyTasks(date);
         }
         setIsSubmitting(false);
     };
@@ -174,46 +196,16 @@ const Dashboard = () => {
     };
 
     const getHolidays = (year) => {
-        // Fixed holidays
         const holidays = [
-            `${year}-01-01`, // New Year
-            `${year}-03-01`, // Samiljeol
-            `${year}-05-05`, // Children's Day
-            `${year}-06-06`, // Memorial Day
-            `${year}-08-15`, // Liberation Day
-            `${year}-10-03`, // Foundation Day
-            `${year}-10-09`, // Hangeul Day
-            `${year}-12-25`, // Christmas
+            `${year}-01-01`, `${year}-03-01`, `${year}-05-05`, `${year}-06-06`,
+            `${year}-08-15`, `${year}-10-03`, `${year}-10-09`, `${year}-12-25`,
         ];
-
-        // Specific handling for 2025 and 2026 (Lunar New Year, Chuseok, Buddha's Birthday, Substitute Holidays)
         if (year === 2025) {
-            holidays.push(
-                '2025-01-28', '2025-01-29', '2025-01-30', // Seollal
-                '2025-03-03', // Substitute Samiljeol
-                '2025-05-06', // Substitute Children's Day
-                '2025-05-05', // Buddha's Birthday (Matches Children's Day)
-                '2025-10-05', '2025-10-06', '2025-10-07', '2025-10-08', // Chuseok & extended
-                // Add more specific substitutes if needed
-            );
+            holidays.push('2025-01-28', '2025-01-29', '2025-01-30', '2025-03-03', '2025-05-06', '2025-05-05', '2025-10-05', '2025-10-06', '2025-10-07', '2025-10-08');
         } else if (year === 2026) {
-            holidays.push(
-                '2026-02-16', '2026-02-17', '2026-02-18', // Seollal
-                '2026-03-02', // Substitute Samiljeol
-                '2026-05-24', // Buddha's Birthday
-                '2026-05-25', // Substitute Buddha's Birthday
-                '2026-09-24', '2026-09-25', '2026-09-26', // Chuseok
-                // Check substitutes logic as needed
-            );
+            holidays.push('2026-02-16', '2026-02-17', '2026-02-18', '2026-03-02', '2026-05-24', '2026-05-25', '2026-09-24', '2026-09-25', '2026-09-26');
         } else if (year === 2027) {
-            holidays.push(
-                '2027-02-06', '2027-02-07', '2027-02-08', // Seollal
-                '2027-02-09', // Substitute Seollal
-                '2027-05-13', // Buddha's Birthday
-                '2027-08-16', // Substitute Liberation Day (Sun -> Mon)
-                '2027-09-14', '2027-09-15', '2027-09-16', // Chuseok
-                '2027-10-04', // Substitute Foundation Day (Sun -> Mon)
-            );
+            holidays.push('2027-02-06', '2027-02-07', '2027-02-08', '2027-02-09', '2027-05-13', '2027-08-16', '2027-09-14', '2027-09-15', '2027-09-16', '2027-10-04');
         }
         return holidays;
     };
@@ -221,26 +213,19 @@ const Dashboard = () => {
     const isHoliday = (date) => {
         const year = date.getFullYear();
         const dateString = format(date, 'yyyy-MM-dd');
-        const holidays = getHolidays(year);
-        return holidays.includes(dateString);
+        return getHolidays(year).includes(dateString);
     };
 
     const tileClassName = ({ date: tileDate, view }) => {
         if (view === 'month') {
             const classes = [];
-            // 오늘 날짜 강조
             if (isToday(tileDate)) classes.push('today-tile');
-
-            // 선택된 날짜 강조
             if (date && tileDate.getTime() === date.getTime()) classes.push('selected-tile');
-
-            const dayOfWeek = tileDate.getDay(); // 0: Sun, 6: Sat
+            const dayOfWeek = tileDate.getDay();
             const isRedDay = dayOfWeek === 0 || isHoliday(tileDate);
             const isBlueDay = dayOfWeek === 6 && !isHoliday(tileDate);
-
             if (isRedDay) classes.push('holiday-tile');
             else if (isBlueDay) classes.push('saturday-tile');
-
             return classes.join(' ');
         }
         return null;
@@ -248,14 +233,12 @@ const Dashboard = () => {
 
     const tileContent = ({ date: tileDate, view }) => {
         if (view === 'month') {
-            // Find tasks for this specific tile date
             const dayTasks = monthlyTasks.filter(task => {
                 const taskDate = parseISO(task.start_time);
                 return taskDate.getDate() === tileDate.getDate() &&
                     taskDate.getMonth() === tileDate.getMonth() &&
                     taskDate.getFullYear() === tileDate.getFullYear();
             });
-
             if (dayTasks.length > 0) {
                 return (
                     <div className="flex flex-col gap-0.5 mt-1 items-start w-full">
@@ -271,16 +254,10 @@ const Dashboard = () => {
         return null;
     };
 
-    // Redirect or show login prompt if not authenticated and not loading
-    if (!loading && !session) {
+    if (!currentUser) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
-                <div className="glass-card p-8 text-center">
-                    <AlertCircle className="h-12 w-12 text-kepco-blue mx-auto mb-4" />
-                    <h2 className="text-xl font-bold text-kepco-navy mb-2">로그인이 필요합니다</h2>
-                    <p className="text-gray-600 mb-6">일정을 확인하려면 로그인이 필요합니다.</p>
-                    <a href="/login" className="btn-primary inline-block">로그인 페이지로 이동</a>
-                </div>
+            <div className="flex justify-center items-center min-h-[50vh]">
+                <Loader2 className="animate-spin h-8 w-8 text-kepco-blue" />
             </div>
         );
     }
@@ -305,16 +282,48 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* User Info / Role Badge */}
-                <div className="mt-4 p-4 glass-card flex items-center justify-between">
-                    <div>
-                        <p className="text-xs text-kepco-gray uppercase font-bold">로그인 계정</p>
-                        <p className="text-sm font-semibold truncate max-w-[150px]">{session?.user?.email}</p>
+                {/* User Info */}
+                <div className="mt-4 p-4 glass-card">
+                    <div className="flex items-center justify-between mb-3">
+                        <div>
+                            <p className="text-xs text-kepco-gray uppercase font-bold">로그인 계정</p>
+                            <p className="text-sm font-semibold truncate max-w-[150px]">{currentUser?.position_title}</p>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${isAdmin ? 'bg-kepco-navy text-white' : 'bg-gray-200 text-gray-600'}`}>
+                            {isAdmin ? '관리자' : '조회자'}
+                        </span>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${isAdmin ? 'bg-kepco-navy text-white' : 'bg-gray-200 text-gray-600'}`}>
-                        {isAdmin ? '관리자 (Admin)' : '조회자 (Viewer)'}
-                    </span>
+                    <div className="flex gap-2">
+                        <button onClick={handleLogout} className="flex-1 py-2 px-3 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center gap-1 transition-colors">
+                            <LogOut size={14} /> 로그아웃
+                        </button>
+                        <button onClick={handleWithdraw} className="py-2 px-3 text-sm bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors">
+                            탈퇴
+                        </button>
+                    </div>
                 </div>
+
+                {/* Admin: Pending Users */}
+                {isAdmin && pendingUsers.length > 0 && (
+                    <div className="mt-4 p-4 glass-card">
+                        <h3 className="text-sm font-bold text-kepco-navy mb-3">가입 대기자 ({pendingUsers.length}명)</h3>
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                            {pendingUsers.map(user => (
+                                <div key={user.id} className="flex items-center justify-between bg-white p-2 rounded-lg border">
+                                    <span className="text-sm font-medium">{user.position_title}</span>
+                                    <div className="flex gap-1">
+                                        <button onClick={() => handleApproveUser(user.id)} className="p-1.5 bg-green-100 hover:bg-green-200 text-green-600 rounded" title="승인">
+                                            <UserCheck size={14} />
+                                        </button>
+                                        <button onClick={() => handleRejectUser(user.id)} className="p-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded" title="거절">
+                                            <UserX size={14} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Right Column: Task List */}
@@ -328,10 +337,7 @@ const Dashboard = () => {
                             <p className="text-kepco-gray text-sm">오늘의 일정</p>
                         </div>
                         {isAdmin && (
-                            <button
-                                onClick={() => setIsModalOpen(true)}
-                                className="btn-primary flex items-center gap-2"
-                            >
+                            <button onClick={() => setIsModalOpen(true)} className="btn-primary flex items-center gap-2">
                                 <Plus size={18} />
                                 <span>일정 추가</span>
                             </button>
@@ -370,7 +376,7 @@ const Dashboard = () => {
                                                 <Clock size={12} />
                                                 <span>{format(parseISO(task.start_time), 'HH:mm')}</span>
                                                 {task.description && (
-                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold bg-blue-50 text-kepco-blue`}>
+                                                    <span className="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold bg-blue-50 text-kepco-blue">
                                                         {task.description}
                                                     </span>
                                                 )}
@@ -393,11 +399,7 @@ const Dashboard = () => {
                                             >
                                                 <Edit size={14} />
                                             </button>
-                                            <button
-                                                onClick={() => deleteTask(task.id)}
-                                                className="p-1 text-gray-400 hover:text-red-500"
-                                                title="삭제"
-                                            >
+                                            <button onClick={() => deleteTask(task.id)} className="p-1 text-gray-400 hover:text-red-500" title="삭제">
                                                 <Trash2 size={14} />
                                             </button>
                                         </div>
@@ -423,35 +425,17 @@ const Dashboard = () => {
                         <form onSubmit={handleAddTask} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">제목</label>
-                                <input
-                                    type="text"
-                                    value={newTaskTitle}
-                                    onChange={(e) => setNewTaskTitle(e.target.value)}
-                                    className="input-field"
-                                    placeholder="예: 본부장 주간 회의"
-                                    required
-                                    autoFocus
-                                />
+                                <input type="text" value={newTaskTitle} onChange={(e) => setNewTaskTitle(e.target.value)} className="input-field" placeholder="예: 본부장 주간 회의" required autoFocus />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">시간</label>
-                                    <input
-                                        type="time"
-                                        value={newTaskTime}
-                                        onChange={(e) => setNewTaskTime(e.target.value)}
-                                        className="input-field"
-                                        required
-                                    />
+                                    <input type="time" value={newTaskTime} onChange={(e) => setNewTaskTime(e.target.value)} className="input-field" required />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">유형</label>
-                                    <select
-                                        value={newTaskType}
-                                        onChange={(e) => setNewTaskType(e.target.value)}
-                                        className="input-field"
-                                    >
+                                    <select value={newTaskType} onChange={(e) => setNewTaskType(e.target.value)} className="input-field">
                                         <option value="work">업무</option>
                                         <option value="visit">순시</option>
                                         <option value="meeting">회의</option>
@@ -461,11 +445,7 @@ const Dashboard = () => {
                             </div>
 
                             <div className="pt-2">
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className="w-full btn-primary flex justify-center items-center py-3 text-lg"
-                                >
+                                <button type="submit" disabled={isSubmitting} className="w-full btn-primary flex justify-center items-center py-3 text-lg">
                                     {isSubmitting ? <Loader2 className="animate-spin" /> : '일정 저장'}
                                 </button>
                             </div>
@@ -473,6 +453,7 @@ const Dashboard = () => {
                     </div>
                 </div>
             )}
+
             {/* Edit Task Modal */}
             {isEditModalOpen && editTask && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -487,33 +468,17 @@ const Dashboard = () => {
                         <form onSubmit={handleEditTask} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">제목</label>
-                                <input
-                                    type="text"
-                                    value={newTaskTitle}
-                                    onChange={(e) => setNewTaskTitle(e.target.value)}
-                                    className="input-field"
-                                    required
-                                />
+                                <input type="text" value={newTaskTitle} onChange={(e) => setNewTaskTitle(e.target.value)} className="input-field" required />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">시간</label>
-                                    <input
-                                        type="time"
-                                        value={newTaskTime}
-                                        onChange={(e) => setNewTaskTime(e.target.value)}
-                                        className="input-field"
-                                        required
-                                    />
+                                    <input type="time" value={newTaskTime} onChange={(e) => setNewTaskTime(e.target.value)} className="input-field" required />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">유형</label>
-                                    <select
-                                        value={newTaskType}
-                                        onChange={(e) => setNewTaskType(e.target.value)}
-                                        className="input-field"
-                                    >
+                                    <select value={newTaskType} onChange={(e) => setNewTaskType(e.target.value)} className="input-field">
                                         <option value="work">업무</option>
                                         <option value="visit">순시</option>
                                         <option value="meeting">회의</option>
@@ -523,11 +488,7 @@ const Dashboard = () => {
                             </div>
 
                             <div className="pt-2">
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className="w-full btn-primary flex justify-center items-center py-3 text-lg"
-                                >
+                                <button type="submit" disabled={isSubmitting} className="w-full btn-primary flex justify-center items-center py-3 text-lg">
                                     {isSubmitting ? <Loader2 className="animate-spin" /> : '수정 저장'}
                                 </button>
                             </div>

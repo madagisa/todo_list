@@ -1,6 +1,6 @@
 {
-  "name": "KEPCO Daegu Headquarters Schedule System",
-  "short_name": "KEPCO Schedule",
+  "name": "KEPCO 대구본부장 일정관리 시스템",
+  "short_name": "대구본부장일정",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

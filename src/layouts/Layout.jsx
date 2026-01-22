@@ -16,7 +16,7 @@ const Layout = () => {
                             </div>
                             <div className="flex flex-col">
                                 <span className="font-heading font-bold text-lg leading-tight tracking-tight text-kepco-navy">KEPCO</span>
-                                <span className="text-[10px] font-semibold tracking-wider text-kepco-gray uppercase leading-none">Daegu Headquarters</span>
+                                <span className="text-[10px] font-semibold tracking-wider text-kepco-gray leading-none">대구본부장 일정관리 시스템</span>
                             </div>
                         </div>
 
