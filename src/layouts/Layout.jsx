@@ -18,10 +18,7 @@ const Layout = () => {
                             </div>
                         </div>
 
-                        {/* Mobile Menu Button (Placeholder) */}
-                        <button className="p-2 rounded-md hover:bg-gray-100 transition-colors md:hidden">
-                            <Menu className="h-6 w-6 text-kepco-navy" />
-                        </button>
+
 
                         {/* Desktop Nav (Optional) */}
                         <div className="hidden md:flex items-center space-x-4">

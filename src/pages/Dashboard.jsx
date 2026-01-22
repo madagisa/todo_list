@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import { format, startOfDay, endOfDay, parseISO, isToday } from 'date-fns';
-import { Plus, CheckCircle, Circle, Clock, Trash2, X, Loader2, AlertCircle, Edit, UserCheck, UserX, LogOut } from 'lucide-react';
+import { format, startOfDay, endOfDay, parseISO, isToday, addDays, addWeeks, addMonths } from 'date-fns';
+import { Plus, CheckCircle, Circle, Clock, Trash2, X, Loader2, Edit, UserCheck, UserX, LogOut } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 
@@ -30,6 +30,10 @@ const Dashboard = () => {
     const [newTaskTitle, setNewTaskTitle] = useState('');
     const [newTaskTime, setNewTaskTime] = useState('09:00');
     const [newTaskType, setNewTaskType] = useState('work');
+    // Recurrence State
+    const [recurrence, setRecurrence] = useState('none'); // 'none' | 'daily' | 'weekly' | 'monthly'
+    const [recurrenceEndDate, setRecurrenceEndDate] = useState(format(addMonths(new Date(), 1), 'yyyy-MM-dd'));
+
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
@@ -123,26 +127,59 @@ const Dashboard = () => {
 
         setIsSubmitting(true);
         const dateStr = format(date, 'yyyy-MM-dd');
-        const dateTime = new Date(`${dateStr}T${newTaskTime}:00`);
+        const startDateTime = new Date(`${dateStr}T${newTaskTime}:00`);
+
+        let tasksToInsert = [];
+
+        // Base task
+        const createTaskObject = (taskDate) => ({
+            title: newTaskTitle,
+            start_time: taskDate.toISOString(),
+            end_time: taskDate.toISOString(), // Assuming 0 duration for now or same as start
+            status: 'pending',
+            user_id: currentUser.id,
+            description: newTaskType
+        });
+
+        if (recurrence === 'none') {
+            tasksToInsert.push(createTaskObject(startDateTime));
+        } else {
+            const endDate = new Date(recurrenceEndDate);
+            // Set end date time to end of day to include proper comparison
+            endDate.setHours(23, 59, 59, 999);
+
+            let currentDateIter = new Date(startDateTime);
+
+            // Limit iterations to prevent accidents (e.g. max 365 instances)
+            let count = 0;
+            const MAX_INSTANCES = 365;
+
+            while (currentDateIter <= endDate && count < MAX_INSTANCES) {
+                tasksToInsert.push(createTaskObject(new Date(currentDateIter)));
+
+                if (recurrence === 'daily') {
+                    currentDateIter = addDays(currentDateIter, 1);
+                } else if (recurrence === 'weekly') {
+                    currentDateIter = addWeeks(currentDateIter, 1);
+                } else if (recurrence === 'monthly') {
+                    currentDateIter = addMonths(currentDateIter, 1);
+                }
+                count++;
+            }
+        }
 
         const { error } = await supabase
             .from('schedule_items')
-            .insert([
-                {
-                    title: newTaskTitle,
-                    start_time: dateTime.toISOString(),
-                    end_time: dateTime.toISOString(),
-                    status: 'pending',
-                    user_id: currentUser.id,
-                    description: newTaskType
-                }
-            ]);
+            .insert(tasksToInsert);
 
         if (error) {
             alert('일정 추가 실패: ' + error.message);
         } else {
             setIsModalOpen(false);
             setNewTaskTitle('');
+            // Reset recurrence defaults
+            setRecurrence('none');
+            setRecurrenceEndDate(format(addMonths(new Date(), 1), 'yyyy-MM-dd'));
             fetchMonthlyTasks(date);
         }
         setIsSubmitting(false);
@@ -282,28 +319,7 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* User Info */}
-                <div className="mt-4 p-4 glass-card">
-                    <div className="flex items-center justify-between mb-3">
-                        <div>
-                            <p className="text-xs text-kepco-gray uppercase font-bold">로그인 계정</p>
-                            <p className="text-sm font-semibold truncate max-w-[150px]">{currentUser?.position_title}</p>
-                        </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${isAdmin ? 'bg-kepco-navy text-white' : 'bg-gray-200 text-gray-600'}`}>
-                            {isAdmin ? '관리자' : '조회자'}
-                        </span>
-                    </div>
-                    <div className="flex gap-2">
-                        <button onClick={handleLogout} className="flex-1 py-2 px-3 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center gap-1 transition-colors">
-                            <LogOut size={14} /> 로그아웃
-                        </button>
-                        <button onClick={handleWithdraw} className="py-2 px-3 text-sm bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors">
-                            탈퇴
-                        </button>
-                    </div>
-                </div>
-
-                {/* Admin: Pending Users */}
+                {/* Admin: Pending Users (Still in Left Column) */}
                 {isAdmin && pendingUsers.length > 0 && (
                     <div className="mt-4 p-4 glass-card">
                         <h3 className="text-sm font-bold text-kepco-navy mb-3">가입 대기자 ({pendingUsers.length}명)</h3>
@@ -327,7 +343,7 @@ const Dashboard = () => {
             </div>
 
             {/* Right Column: Task List */}
-            <div className="w-full lg:w-2/3">
+            <div className="w-full lg:w-2/3 flex flex-col gap-4">
                 <div className="glass-card p-6 min-h-[500px] flex flex-col">
                     <div className="flex justify-between items-center mb-6">
                         <div>
@@ -409,6 +425,27 @@ const Dashboard = () => {
                         )}
                     </div>
                 </div>
+
+                {/* User Info (Moved to Right Column, below Task List) */}
+                <div className="p-4 glass-card">
+                    <div className="flex items-center justify-between mb-3">
+                        <div>
+                            <p className="text-xs text-kepco-gray uppercase font-bold">로그인 계정</p>
+                            <p className="text-sm font-semibold truncate max-w-[150px]">{currentUser?.position_title}</p>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${isAdmin ? 'bg-kepco-navy text-white' : 'bg-gray-200 text-gray-600'}`}>
+                            {isAdmin ? '관리자' : '조회자'}
+                        </span>
+                    </div>
+                    <div className="flex gap-2">
+                        <button onClick={handleLogout} className="flex-1 py-2 px-3 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center gap-1 transition-colors">
+                            <LogOut size={14} /> 로그아웃
+                        </button>
+                        <button onClick={handleWithdraw} className="py-2 px-3 text-sm bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors">
+                            탈퇴
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {/* Add Task Modal */}
@@ -441,6 +478,38 @@ const Dashboard = () => {
                                         <option value="meeting">회의</option>
                                         <option value="event">행사</option>
                                     </select>
+                                </div>
+                            </div>
+
+                            {/* Recurrence Settings */}
+                            <div className="border-t pt-4 mt-2">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">반복 설정</label>
+                                        <select
+                                            value={recurrence}
+                                            onChange={(e) => setRecurrence(e.target.value)}
+                                            className="input-field"
+                                        >
+                                            <option value="none">반복 없음</option>
+                                            <option value="daily">매일</option>
+                                            <option value="weekly">매주</option>
+                                            <option value="monthly">매월</option>
+                                        </select>
+                                    </div>
+                                    {recurrence !== 'none' && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">종료일</label>
+                                            <input
+                                                type="date"
+                                                value={recurrenceEndDate}
+                                                onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                                                className="input-field"
+                                                min={format(date, 'yyyy-MM-dd')}
+                                                required
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
