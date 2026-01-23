@@ -58,6 +58,13 @@ const Dashboard = () => {
             if (isAdmin) {
                 fetchPendingUsers();
             }
+
+            // 3초마다 자동 새로고침 (Polling)
+            const intervalId = setInterval(() => {
+                fetchMonthlyTasks(date, true); // true = 백그라운드 (로딩 스피너 없음)
+            }, 3000);
+
+            return () => clearInterval(intervalId);
         }
     }, [date, currentUser, isAdmin]);
 
@@ -108,8 +115,8 @@ const Dashboard = () => {
         navigate('/login');
     };
 
-    const fetchMonthlyTasks = async (currentDate) => {
-        setLoading(true);
+    const fetchMonthlyTasks = async (currentDate, isBackground = false) => {
+        if (!isBackground) setLoading(true);
         const start = startOfDay(new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)).toISOString();
         const end = endOfDay(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)).toISOString();
 
@@ -122,7 +129,7 @@ const Dashboard = () => {
 
         if (error) console.error('Error fetching tasks:', error);
         else setMonthlyTasks(data || []);
-        setLoading(false);
+        if (!isBackground) setLoading(false);
     };
 
     const handleAddTask = async (e) => {
